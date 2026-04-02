@@ -42,21 +42,25 @@ async def main(prompt):
     if not response.tool_calls:
         return response.content
 
-    tool_messages = []
-    for tc in response.tool_calls:
-        selected_tool = tc["name"]
-        selected_tool_args = tc.get("args") or {}
-        selected_tool_id = tc["id"]
+    messages = [prompt, response]
 
-        result = await named_tools[selected_tool].ainvoke(selected_tool_args)
-        tool_messages.append(ToolMessage(tool_call_id=selected_tool_id, content=json.dumps(result)))
+    while response.tool_calls:
+        tool_messages = []
+        for tc in response.tool_calls:
+            selected_tool = tc["name"]
+            selected_tool_args = tc.get("args") or {}
+            selected_tool_id = tc["id"]
 
-    final_response = await llm_with_tools.ainvoke([prompt, response, *tool_messages])
-    print('Final response from LLM after tool calls:', final_response)
-    if not final_response.content:
-        raise ValueError("LLM did not return a response. Please check the tool calls and their results.")
+            result = await named_tools[selected_tool].ainvoke(selected_tool_args)
+            tool_messages.append(ToolMessage(tool_call_id=selected_tool_id, content=json.dumps(result)))
 
-    return final_response.content
+        messages.extend(tool_messages)
+        response = await llm_with_tools.ainvoke(messages)
+        messages.append(response)
+
+    print('Final response from LLM after tool calls:', response)
+    return response.content
+    
 
 if __name__ == "__main__":
      prompt = "Give summary of expenses for last year to till now and categorize them."
