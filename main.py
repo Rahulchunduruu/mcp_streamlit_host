@@ -39,6 +39,9 @@ async def main(prompt):
     response = await llm_with_tools.ainvoke(prompt)
     print('Initial response from LLM:', response)
 
+    if not response.tool_calls:
+        return response.content
+
     tool_messages = []
     for tc in response.tool_calls:
         selected_tool = tc["name"]
@@ -50,6 +53,9 @@ async def main(prompt):
 
     final_response = await llm_with_tools.ainvoke([prompt, response, *tool_messages])
     print('Final response from LLM after tool calls:', final_response)
+    if not final_response.content:
+        raise ValueError("LLM did not return a response. Please check the tool calls and their results.")
+
     return final_response.content
 
 if __name__ == "__main__":
