@@ -1,0 +1,7 @@
+streamlit
+langchain-mcp-adapters
+langchain-openai
+langchain-core
+openai
+python-dotenv
+nest_asyncio
